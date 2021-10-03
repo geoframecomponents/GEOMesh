@@ -44,7 +44,7 @@ public class ReadGmshUnstructured2D {
 	public String fileName = null; 
 
 	@In
-	public String splitter = " ";
+	public String splitter = "\\s+";
 
 	@In
 	public boolean printFile = false;
@@ -71,121 +71,125 @@ public class ReadGmshUnstructured2D {
 	private int nVertices =-999;
 	private int nElements = -999;
 	private int nBorderEdges = -999;
+	private int step = 0;
 
 	/**
 	 * @param args
 	 * @throws IOException 
 	 */
-	@Initialize
+	@Execute
 	public void process() throws IOException {
 
-		verticesCoordinates.add(0, new Double[] {-9999.0,-9999.0});
-		elementsVertices.add(0, new Integer[] {-9999,-9999,-9999});
-		elementsLabel.add(0, -9999);
-		borderEdgesVertices.add(0, new Integer[] {-9999,-9999});
-		borderEdgesLabel.add(0, -9999); 
-		
-		File file = new File(fileName);
-		FileInputStream fis = new FileInputStream(file);
-		InputStreamReader isr = new InputStreamReader(fis);
-		BufferedReader br = new BufferedReader(isr);
-
-		String line;
-		System.out.println("Opened the file: " + fileName + "\n\n");
-		if(printFile == true) {
+		if(step==0) {
 			
-			while((line = br.readLine()) != null){
-				//process the line
-				System.out.println(line);
+			verticesCoordinates.add(0, new Double[] {-9999.0,-9999.0});
+			elementsVertices.add(0, new Integer[] {-9999,-9999,-9999});
+			elementsLabel.add(0, -9999);
+			borderEdgesVertices.add(0, new Integer[] {-9999,-9999});
+			borderEdgesLabel.add(0, -9999); 
+
+			File file = new File(fileName);
+			FileInputStream fis = new FileInputStream(file);
+			InputStreamReader isr = new InputStreamReader(fis);
+			BufferedReader br = new BufferedReader(isr);
+
+			String line;
+			System.out.println("Opened the file: " + fileName + "\n\n");
+			if(printFile == true) {
+
+				while((line = br.readLine()) != null){
+					//process the line
+					System.out.println(line);
+				}
+
 			}
-			
-		}
-		
-		int iLine = 0;
-		while((line = br.readLine()) != null){
 
-			String[] lineContent = line.split(splitter);
+			int iLine = 0;
+			while((line = br.readLine()) != null){
 
-			if(iLine==4) {
+				String[] lineContent = line.split(splitter);
 
-				nVertices = Integer.valueOf(lineContent[1]);
+				if(iLine==4) {
 
-			} else if(iLine>4 && iLine<=nVertices+4) {
+					nVertices = Integer.valueOf(lineContent[1]);
 
-				verticesCoordinates.add( iLine-4, new Double[] { Double.valueOf(lineContent[1]),Double.valueOf(lineContent[2]) } ); 
+				} else if(iLine>4 && iLine<=nVertices+4) {
 
-			} else if(iLine==4+nVertices+2) {
+					verticesCoordinates.add( iLine-4, new Double[] { Double.valueOf(lineContent[1]),Double.valueOf(lineContent[2]) } ); 
 
-				nBorderEdges = Integer.valueOf(lineContent[1]);
+				} else if(iLine==4+nVertices+2) {
 
-			} else if(iLine>4+nVertices+2 && iLine<=4+nVertices+2+nBorderEdges) {
+					nBorderEdges = Integer.valueOf(lineContent[1]);
 
-				borderEdgesVertices.add(iLine-(4+nVertices+2), new Integer[] {-9999, -9999} );
-				borderEdgesLabel.add(iLine-(4+nVertices+2), -9999);
+				} else if(iLine>4+nVertices+2 && iLine<=4+nVertices+2+nBorderEdges) {
 
-				if (Integer.valueOf(lineContent[3]) == 1) {
-					// internal boundary
-				} else {
+					borderEdgesVertices.add(iLine-(4+nVertices+2), new Integer[] {-9999, -9999} );
+					borderEdgesLabel.add(iLine-(4+nVertices+2), -9999);
 
-					borderEdgesVertices.set(iLine-(4+nVertices+2), new Integer[] { Integer.valueOf(lineContent[1]),Integer.valueOf(lineContent[2]) } );
-					borderEdgesLabel.set(iLine-(4+nVertices+2), Integer.valueOf(lineContent[3]));
+					if (Integer.valueOf(lineContent[3]) == 1) {
+						// internal boundary
+					} else {
+
+						borderEdgesVertices.set(iLine-(4+nVertices+2), new Integer[] { Integer.valueOf(lineContent[1]),Integer.valueOf(lineContent[2]) } );
+						borderEdgesLabel.set(iLine-(4+nVertices+2), Integer.valueOf(lineContent[3]));
+
+					}
+				} else if(iLine==4+nVertices+2+nBorderEdges+2) {
+
+					nElements = Integer.valueOf(lineContent[1]);
+
+				} else if(iLine>4+nVertices+2+nBorderEdges+2 && iLine<=4+nVertices+2+nBorderEdges+2+nElements) {
+
+					elementsVertices.add(iLine-(4+nVertices+2+nBorderEdges+2), new Integer[] { Integer.valueOf(lineContent[1]),Integer.valueOf(lineContent[2]), 
+							Integer.valueOf(lineContent[3]) } ); 
+					elementsLabel.add(iLine-(4+nVertices+2+nBorderEdges+2), Integer.valueOf(lineContent[4]));
 
 				}
-			} else if(iLine==4+nVertices+2+nBorderEdges+2) {
 
-				nElements = Integer.valueOf(lineContent[1]);
-
-			} else if(iLine>4+nVertices+2+nBorderEdges+2 && iLine<=4+nVertices+2+nBorderEdges+2+nElements) {
-
-				elementsVertices.add(iLine-(4+nVertices+2+nBorderEdges+2), new Integer[] { Integer.valueOf(lineContent[1]),Integer.valueOf(lineContent[2]), 
-						Integer.valueOf(lineContent[3]) } ); 
-				elementsLabel.add(iLine-(4+nVertices+2+nBorderEdges+2), Integer.valueOf(lineContent[4]));
+				iLine ++;
 
 			}
 
-			iLine ++;
+			br.close();
+			System.out.println("Reading file completed.");
+
+
+
+			/*
+			 * Check informations are correctly stored
+			 */
+			if(checkData == true) {
+
+				System.out.println("\n\t nVertices : " +nVertices);
+				System.out.println("\t nElements : " +nElements);
+				System.out.println("\t nBorderEdges : " +nBorderEdges);
+
+				System.out.println("\n   Vertices set :");
+				for(int vertex=1; vertex<verticesCoordinates.size(); vertex++) {
+					System.out.println("      " + vertex + " : "+ verticesCoordinates.get(vertex)[0] + "," +verticesCoordinates.get(vertex)[1]);
+				}
+
+				System.out.println("\n   Elements' vertices :");
+				for(int element=1; element<elementsVertices.size(); element++) {
+					System.out.println("      " + element + " : "+ elementsVertices.get(element)[0] + "," +elementsVertices.get(element)[1]
+							+ "," +elementsVertices.get(element)[2] + " ; " + elementsLabel.get(element));
+				}
+
+				System.out.println("\n   Border edges :");
+				for(int edge=1; edge<borderEdgesVertices.size(); edge++) {
+					System.out.println("      " + edge + " : "+ borderEdgesVertices.get(edge)[0] + "," +borderEdgesVertices.get(edge)[1]
+							+ " ; " + borderEdgesLabel.get(edge));
+				}
+
+			}
+
+			System.out.println("\nExit ReadGmshUnstructured\n\n\n");
 
 		}
 
-		br.close();
-		System.out.println("Reading file completed.");
-
-
-
-		/*
-		 * Check informations are correctly stored
-		 */
-		if(checkData == true) {
-			
-			System.out.println("\n\t nVertices : " +nVertices);
-			System.out.println("\t nElements : " +nElements);
-			System.out.println("\t nBorderEdges : " +nBorderEdges);
-
-			System.out.println("\n   Vertices set :");
-			for(int vertex=1; vertex<verticesCoordinates.size(); vertex++) {
-				System.out.println("      " + vertex + " : "+ verticesCoordinates.get(vertex)[0] + "," +verticesCoordinates.get(vertex)[1]);
-			}
-
-			System.out.println("\n   Elements' vertices :");
-			for(int element=1; element<elementsVertices.size(); element++) {
-				System.out.println("      " + element + " : "+ elementsVertices.get(element)[0] + "," +elementsVertices.get(element)[1]
-						+ "," +elementsVertices.get(element)[2] + " ; " + elementsLabel.get(element));
-			}
-
-			System.out.println("\n   Border edges :");
-			for(int edge=1; edge<borderEdgesVertices.size(); edge++) {
-				System.out.println("      " + edge + " : "+ borderEdgesVertices.get(edge)[0] + "," +borderEdgesVertices.get(edge)[1]
-						+ " ; " + borderEdgesLabel.get(edge));
-			}
-
-		}
+		step++;
 		
-		System.out.println("\nExit ReadGmshUnstructured\n\n\n");
-
-		//		}
-
-		//		step++;
-	}// close @Initialize
+	}// close @Execute
 
 
 	public static void main(String[] args) throws IOException {

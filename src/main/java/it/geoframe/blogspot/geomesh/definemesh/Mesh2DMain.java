@@ -114,6 +114,7 @@ public class Mesh2DMain {
 	public void process() throws IOException {
 
 		if (step == 0) {
+			
 			long startTime = System.nanoTime();
 
 			elementsCentroidsCoordinates = new ArrayList<Double[]>();
